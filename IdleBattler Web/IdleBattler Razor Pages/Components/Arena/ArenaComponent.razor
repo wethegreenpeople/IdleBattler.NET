@@ -1,0 +1,64 @@
+﻿@using Blazor.Extensions.Canvas.Canvas2D
+@using Blazor.Extensions
+@implements IDisposable
+
+<h3>Arena</h3>
+
+<BECanvas Width="400" Height="400" @ref="_canvasReference"></BECanvas>
+
+<style>
+    canvas {
+        border: thin solid black;
+    }
+</style>
+
+@code {
+    private Canvas2DContext _context;
+    private int _xLocation = 10;
+    private int _yLocation = 10;
+    private int _dx = 2;
+    private int _dy = -2;
+
+    private readonly PeriodicTimer _timer = new(TimeSpan.FromMilliseconds(10));
+
+    protected BECanvasComponent _canvasReference;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        this._context = await this._canvasReference.CreateCanvas2DAsync();
+
+        await RunOnTimer(this._timer, () => draw(this._context, this._canvasReference));
+    }
+
+    public void Dispose() {
+        this._context.Dispose();
+    }
+
+    private async Task drawBall(int xLoc, int yLoc, Canvas2DContext context) {
+        await context.BeginPathAsync();
+        await context.ArcAsync(xLoc, yLoc, 10, 0, Math.PI * 2);
+        await context.SetFillStyleAsync("red");
+        await context.FillAsync();
+        await context.ClosePathAsync();
+    }
+
+    private async Task draw(Canvas2DContext context, BECanvasComponent canvas) {
+        if (context == null || canvas == null) return;
+        await context.ClearRectAsync(0, 0, canvas.Width, canvas.Height);
+        await drawBall(this._xLocation, this._yLocation, context);
+
+        this._xLocation += this._dx;
+        this._yLocation -= this._dy;
+    }
+
+    private async Task RunOnTimer(PeriodicTimer timer, Func<Task> function) {
+       try {
+            while (await timer.WaitForNextTickAsync())
+            {
+                await function();
+            }
+       }
+       catch (Exception ex) {
+       }
+    }
+}
