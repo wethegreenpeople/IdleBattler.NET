@@ -3,9 +3,15 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.3.32929.385
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IdleBattler Web", "IdleBattler Web\IdleBattler Web.csproj", "{F0D6A78D-FCAE-4019-AADB-EE0E290ACD50}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IdleBattler Web", "IdleBattler Web\IdleBattler Web.csproj", "{F0D6A78D-FCAE-4019-AADB-EE0E290ACD50}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IdleBattler Razor Pages", "IdleBattler Razor Pages\IdleBattler Razor Pages.csproj", "{F9B4066C-BF2B-418C-BD51-BB7D5308B47A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IdleBattler Razor Pages", "IdleBattler Razor Pages\IdleBattler Razor Pages.csproj", "{F9B4066C-BF2B-418C-BD51-BB7D5308B47A}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IdleBattler Server", "..\IdleBattler Server\IdleBattler Server.csproj", "{EEA7924A-DCEE-4C6F-A766-D7E93FBCCF86}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IdleBattler Tests", "..\IdleBattler Tests\IdleBattler Tests.csproj", "{A499977B-6056-4B5B-8C4A-B0DBB2C3C32C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IdleBattler Common", "IdleBattler Common\IdleBattler Common.csproj", "{E8928C96-F31A-4FBC-B6D4-4131D8F5BD70}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +27,18 @@ Global
 		{F9B4066C-BF2B-418C-BD51-BB7D5308B47A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F9B4066C-BF2B-418C-BD51-BB7D5308B47A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F9B4066C-BF2B-418C-BD51-BB7D5308B47A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EEA7924A-DCEE-4C6F-A766-D7E93FBCCF86}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EEA7924A-DCEE-4C6F-A766-D7E93FBCCF86}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EEA7924A-DCEE-4C6F-A766-D7E93FBCCF86}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EEA7924A-DCEE-4C6F-A766-D7E93FBCCF86}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A499977B-6056-4B5B-8C4A-B0DBB2C3C32C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A499977B-6056-4B5B-8C4A-B0DBB2C3C32C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A499977B-6056-4B5B-8C4A-B0DBB2C3C32C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A499977B-6056-4B5B-8C4A-B0DBB2C3C32C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E8928C96-F31A-4FBC-B6D4-4131D8F5BD70}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E8928C96-F31A-4FBC-B6D4-4131D8F5BD70}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E8928C96-F31A-4FBC-B6D4-4131D8F5BD70}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E8928C96-F31A-4FBC-B6D4-4131D8F5BD70}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

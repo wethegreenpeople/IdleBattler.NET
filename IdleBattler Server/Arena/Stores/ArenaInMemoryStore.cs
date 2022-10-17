@@ -1,4 +1,4 @@
-﻿using IdleBattler_Server.Arena.Models;
+﻿using IdleBattler_Common.Models.Arena;
 
 namespace IdleBattler_Server.Arena.Stores
 {

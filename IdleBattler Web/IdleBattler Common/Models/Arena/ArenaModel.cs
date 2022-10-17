@@ -1,4 +1,4 @@
-﻿namespace IdleBattler_Server.Arena.Models
+﻿namespace IdleBattler_Common.Models.Arena
 {
     public class ArenaModel
     {

@@ -1,4 +1,4 @@
-﻿using IdleBattler_Server.Arena.Models;
+﻿using IdleBattler_Common.Models.Arena;
 using IdleBattler_Server.Arena.Stores;
 using Microsoft.AspNetCore.Mvc;
 
