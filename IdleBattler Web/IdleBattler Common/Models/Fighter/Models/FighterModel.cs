@@ -1,4 +1,6 @@
-﻿namespace IdleBattler_Server.Fighter.Models
+﻿using IdleBattler_Common.Shared;
+
+namespace IdleBattler_Server.Fighter.Models
 {
     public class FighterModel
     {

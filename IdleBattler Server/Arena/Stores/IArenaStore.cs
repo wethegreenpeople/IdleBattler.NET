@@ -4,6 +4,8 @@ namespace IdleBattler_Server.Arena.Stores
 {
     public interface IArenaStore
     {
-        ArenaModel Get();
+        Task<ArenaModel> GetNewArena();
+        Task<ArenaModel> GetArena(Guid arenaId);
+        Task<IEnumerable<ArenaEvent>> GetEvents(ArenaModel arena);
     }
 }

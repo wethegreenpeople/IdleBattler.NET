@@ -15,6 +15,8 @@ builder.Services.AddScoped<IArenaStore, ArenaInMemoryStore>();
 builder.Services.AddScoped<IMovementService, MovementService>();
 builder.Services.AddScoped<IMovementStore, MovementStore>();
 builder.Services.AddScoped<IFighterStore, InMemoryFighterStore>();
+builder.Services.AddScoped<ITreasureService, TreasureService>();
+builder.Services.AddScoped<ITreasureStore, TreasureStore>();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(name: _corsOrigins, builder =>

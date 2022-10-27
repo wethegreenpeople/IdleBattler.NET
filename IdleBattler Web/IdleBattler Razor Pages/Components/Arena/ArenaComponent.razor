@@ -17,15 +17,23 @@
 @code {
     private Canvas2DContext _context;
 
-    private readonly PeriodicTimer _timer = new(TimeSpan.FromMilliseconds(10));
+    private readonly PeriodicTimer _timer = new(TimeSpan.FromMilliseconds(30));
+    private readonly List<ArenaEvent> _treasures = new List<ArenaEvent>();
+    private readonly List<ArenaEvent> _events = new List<ArenaEvent>();
+    private readonly List<ArenaEvent> _fighters = new List<ArenaEvent>();
 
     protected BECanvasComponent _canvasReference;
 
     protected override async Task OnInitializedAsync()
     {
-        var movements = await GetRandomMovements();
+        _events.AddRange(await GetArenaEvents());
 
-        await RunOnTimer(this._timer, () => Draw(this._context, this._canvasReference, movements));
+        await RunOnTimer(this._timer, async () => {
+            var arenaEvent = _events.First();
+            // Don't remove the last event
+            if (_events.Count > 1) _events.Remove(arenaEvent);
+            await Draw(this._context, this._canvasReference, arenaEvent);
+        });
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -37,7 +45,7 @@
         this._context.Dispose(); 
     }
 
-    private async Task DrawBall(double xLoc, double yLoc, Canvas2DContext context) {
+    private async Task DrawFighter(double xLoc, double yLoc, Canvas2DContext context) {
         await context.BeginPathAsync();
         await context.ArcAsync(xLoc, yLoc, 10, 0, Math.PI * 2);
         await context.SetFillStyleAsync("red");
@@ -45,19 +53,47 @@
         await context.ClosePathAsync();
     }
 
-    private async Task Draw(Canvas2DContext context, BECanvasComponent canvas, MovementModel movements) {
+    private async Task DrawAllFighters(List<ArenaEvent> fighters, BECanvasComponent canvas, Canvas2DContext context)
+    {
+        foreach (var fighter in fighters)
+        {
+            double xLocation = canvas.Width * (fighter.EventLocation.XLocation / 100.0); // Server returns a "percentage" location that we can use to draw a location based on canvas size
+            double yLocation = canvas.Height * (fighter.EventLocation.YLocation / 100.0);
+            await DrawFighter(xLocation, yLocation, context);
+        }
+    }
+
+    private async Task DrawTreasures(List<ArenaEvent> treasures, BECanvasComponent canvas, Canvas2DContext context)
+    {
+        foreach (var treasure in treasures)
+        {
+            var xLocation = canvas.Width * (treasure.EventLocation.XLocation / 100.0);
+            var yLocation = canvas.Height * (treasure.EventLocation.YLocation / 100.0);
+            await context.FillRectAsync(xLocation, yLocation, 10, 10);
+        }
+    }
+
+    private async Task Draw(Canvas2DContext context, BECanvasComponent canvas, ArenaEvent arenaEvent) {
         if (context == null || canvas == null) return;
         await context.ClearRectAsync(0, 0, canvas.Width, canvas.Height);
 
-        foreach (var fighterMovement in movements.Movements)
-        {
-            var location = fighterMovement.Locations.First();
-            // Don't remove the final position of the fighter
-            if (fighterMovement.Locations.Count > 1) fighterMovement.Locations.RemoveAt(0);
-            double xLocation = canvas.Width * (location.XLocation / 100.0); // Server returns a "percentage" location that we can use to draw a location based on canvas size
-            double yLocation = canvas.Height * (location.YLocation / 100.0);
-            await DrawBall(xLocation, yLocation, context);
-        }
+        if (arenaEvent.EventAction == EventAction.SpawnTreasure) _treasures.Add(arenaEvent);
+        if (arenaEvent.EventAction == EventAction.Loot) _treasures.Remove(_treasures.Single(s => s.ObjectId == arenaEvent.ObjectId));
+
+        if (arenaEvent.EventAction == EventAction.SpawnFighter) _fighters.Add(arenaEvent);
+        if (arenaEvent.EventAction == EventAction.Movement) _fighters.Single(s => s.ObjectId == arenaEvent.ObjectId).EventLocation = arenaEvent.EventLocation;
+
+        await DrawAllFighters(_fighters, canvas, context);
+        await DrawTreasures(_treasures, canvas, context);
+    }
+
+    private void CalculateTreasureCollisions(List<TreasureModel> treasures, LocationModel fighterLocation)
+    {
+        treasures.RemoveAll(s => {
+            var xInRange = Math.Abs(s.XLocation - fighterLocation.XLocation) <= 5;
+            var yInRange = Math.Abs(s.YLocation - fighterLocation.YLocation) <= 5;
+            return xInRange && yInRange;
+        });
     }
 
     private async Task RunOnTimer(PeriodicTimer timer, Func<Task> function) {
@@ -68,6 +104,22 @@
             }
         }
         catch (Exception ex) {
+        }
+    }
+
+    private async Task<List<ArenaEvent>> GetArenaEvents()
+    {
+        var client = new HttpClient();
+
+        var arenaGuid = Guid.NewGuid();
+        var streamTask = await client.GetStreamAsync($"https://localhost:7156/api/arena/events/{arenaGuid}");
+        try
+        {
+            return JsonSerializer.Deserialize<List<ArenaEvent>>(streamTask);
+        }
+        catch (Exception ex)
+        {
+            return null;
         }
     }
 
@@ -95,6 +147,22 @@
         try
         {
             return JsonSerializer.Deserialize<MovementModel>(streamTask);
+        }
+        catch (Exception ex)
+        {
+            return null;
+        }
+    }
+
+    private async Task<List<TreasureModel>> GetArenaTreasures()
+    {
+        var client = new HttpClient();
+
+        var arenaGuid = Guid.NewGuid();
+        var streamTask = await client.GetStreamAsync($"https://localhost:7156/api/treasure/{arenaGuid.ToString()}");
+        try
+        {
+            return JsonSerializer.Deserialize<List<TreasureModel>>(streamTask);
         }
         catch (Exception ex)
         {

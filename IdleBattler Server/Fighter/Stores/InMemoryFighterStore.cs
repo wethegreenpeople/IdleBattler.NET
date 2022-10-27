@@ -6,7 +6,8 @@ namespace IdleBattler_Server.Fighter.Stores
     {
         public Task<FighterModel> Get(Guid fighterId)
         {
-            return Task.FromResult(new FighterModel(fighterId));
+            var fighter = new FighterModel(fighterId);
+            return Task.FromResult(fighter);
         }
     }
 }

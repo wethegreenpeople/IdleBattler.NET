@@ -1,8 +1,9 @@
-﻿namespace IdleBattler_Common.Models.Arena
+﻿using IdleBattler_Common.Shared;
+
+namespace IdleBattler_Common.Models.Arena
 {
-    public class LocationModel
+    public class LocationModel : ArenaItemLocation
     {
-        public int XLocation { get; set; }
-        public int YLocation { get; set; }
+
     }
 }

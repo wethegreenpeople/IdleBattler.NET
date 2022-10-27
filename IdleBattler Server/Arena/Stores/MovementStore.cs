@@ -1,5 +1,7 @@
 ﻿using IdleBattler_Common.Models.Arena;
+using IdleBattler_Common.Shared;
 using IdleBattler_Server.Arena.Services;
+using IdleBattler_Server.Fighter.Models;
 
 namespace IdleBattler_Server.Arena.Stores
 {
@@ -22,6 +24,11 @@ namespace IdleBattler_Server.Arena.Stores
         {
             var movements = await _movementService.GetMovements(arenaId, fighterId, initialX, initialY);
             return await Task.FromResult(new MovementModel(movements));
+        }
+
+        public async Task<ArenaItemLocation> GetNextLocation(Guid arenaId, ArenaFighterModel arenaFighter)
+        {
+            return await _movementService.GetNextMovement(arenaId, arenaFighter);
         }
     }
 }
