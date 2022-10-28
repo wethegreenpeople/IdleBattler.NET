@@ -14,18 +14,6 @@ namespace IdleBattler_Server.Arena.Stores
             _movementService = movementService;
         }
 
-        public async Task<MovementModel> Get(Guid arenaId, Guid fighterId)
-        {
-            var movements = await _movementService.GetMovements(arenaId, fighterId);
-            return await Task.FromResult(new MovementModel(movements));
-        }
-
-        public async Task<MovementModel> Get(Guid arenaId, Guid fighterId, int initialX, int initialY)
-        {
-            var movements = await _movementService.GetMovements(arenaId, fighterId, initialX, initialY);
-            return await Task.FromResult(new MovementModel(movements));
-        }
-
         public async Task<ArenaItemLocation> GetNextLocation(Guid arenaId, ArenaFighterModel arenaFighter)
         {
             return await _movementService.GetNextMovement(arenaId, arenaFighter);

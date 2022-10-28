@@ -2,6 +2,9 @@
 using IdleBattler_Common.Models.Arena;
 using IdleBattler_Server.Arena.Services;
 using IdleBattler_Server.Fighter.Stores;
+using IdleBattler_Server.Fighter.Models;
+using IdleBattler_Common.Enums.Arena;
+using IdleBattler_Common.Shared;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,91 +15,80 @@ namespace IdleBattler_Tests.Server.Arena.Services
 {
     public class MovementServiceUnitTests
     {
-        [Fact]
-        public async Task GetMovements_GivenAnArenaId_ReturnAListOfMoves()
+        [Fact(DisplayName = "Returns an ArenaLocation given an arenaId and ArenaFighterModel")]
+        [Trait("Category", "GetNextMovement")]
+        public async Task ReturnArenaLocation()
         {
             // Arrange
             var arenaId = Guid.NewGuid();
-            var fighterId = Guid.NewGuid();
-            var fighterStore = new InMemoryFighterStore();
-            var movementService = new MovementService(fighterStore);
+            var fighter = new ArenaFighterModel(new FighterModel(Guid.NewGuid()));
+            var movementService = new MovementService();
 
             // Act
-            var moves = await movementService.GetMovements(arenaId, fighterId);
+            var move = await movementService.GetNextMovement(arenaId, fighter);
 
             // Assert
-            Assert.NotEmpty(moves);
+            Assert.NotNull(move);
+            Assert.True(move.HorizontalMovementDirection == HorizontalMovementDirection.Stationary);
+            Assert.True(move.VerticalMovementDirection == VerticalMovementDirection.Stationary);
+            Assert.True(move.XLocation == 0);
+            Assert.True(move.YLocation == 0);
         }
 
-        [Fact]
-        public async Task GetMovements_GivenAnArenaId_AlwaysReturnTheSameListOfMoves()
+        [Fact(DisplayName = "Given the same objects, always return the same next location")]
+        [Trait("Category", "GetNextMovement")]
+        public async Task AlwaysReturnTheSameLocation()
         {
             // Arrange
             var arenaId = Guid.NewGuid();
-            var fighterId = Guid.NewGuid();
-            var fighterStore = new InMemoryFighterStore();
-            var movementService = new MovementService(fighterStore);
+            var fighter = new ArenaFighterModel(new FighterModel(Guid.NewGuid()));
+            fighter.SetLocation(new ArenaItemLocation(20, 25, VerticalMovementDirection.Up, HorizontalMovementDirection.Left));
+            var movementService = new MovementService();
 
             // Act
-            var moves = await movementService.GetMovements(arenaId, fighterId);
+            var move = await movementService.GetNextMovement(arenaId, fighter);
 
             // Assert
             for (int i = 0; i < 5; ++i)
             {
-                moves.Should().BeEquivalentTo(await movementService.GetMovements(arenaId, fighterId));
+                move.Should().BeEquivalentTo(await movementService.GetNextMovement(arenaId, fighter));
             }
         }
 
-        [Fact]
-        public async Task GetMovements_GivenTwoDifferentArenaIds_ReturnTwoDifferentMoveLists()
+        [Fact(DisplayName = "Next location should always continue from the fighter's current location")]
+        [Trait("Category", "GetNextMovement")]
+        public async Task EnsureNextMovementStartsFromGivenLocation()
         {
             // Arrange
             var arenaId = Guid.NewGuid();
-            var fighterId = Guid.NewGuid();
-            var anotherArenaId = Guid.NewGuid();
-            var fighterStore = new InMemoryFighterStore();
-            var movementService = new MovementService(fighterStore);
+            var fighter = new ArenaFighterModel(new FighterModel(Guid.NewGuid()));
+            fighter.SetLocation(new ArenaItemLocation(20, 25, VerticalMovementDirection.Up, HorizontalMovementDirection.Left));
+            var movementService = new MovementService();
 
             // Act
-            var moves = await movementService.GetMovements(arenaId, fighterId);
-            var anotherMoves = await movementService.GetMovements(anotherArenaId, fighterId);
+            var move = await movementService.GetNextMovement(arenaId, fighter);
 
             // Assert
-            moves.Should().NotBeEquivalentTo(anotherMoves);
+            move.XLocation.Should().Be(19);
+            move.YLocation.Should().Be(24);
         }
 
-        [Fact]
-        public async Task GetMovements_GivenAnInitialStartingLocation_EnsureFollowingMovementsStartFromThere()
+        [Fact(DisplayName = "Next fighter's location is around the edge, we should switch fighter direction")]
+        [Trait("Category", "GetNextMovement")]
+        public async Task ShouldSwitchDirections()
         {
             // Arrange
             var arenaId = Guid.NewGuid();
-            var fighterId = Guid.NewGuid();
-            var fighterStore = new InMemoryFighterStore();
-            var movementService = new MovementService(fighterStore);
+            var fighter = new ArenaFighterModel(new FighterModel(Guid.NewGuid()));
+            fighter.SetLocation(new ArenaItemLocation(4, 4, VerticalMovementDirection.Up, HorizontalMovementDirection.Left));
+            var movementService = new MovementService();
 
             // Act
-            var moves = await movementService.GetMovements(arenaId, fighterId, 20, 20);
+           var move = await movementService.GetNextMovement(arenaId, fighter);
 
             // Assert
-            moves.First().Locations.First().XLocation.Should().BeCloseTo(20, 1); // Initial location, plus movement (default 1)
-            moves.First().Locations.First().YLocation.Should().BeCloseTo(20, 1);
-        }
-
-        [Fact]
-        public async Task GetMovements_GivenFighterIsOnBottomEdge_SwitchDirections()
-        {
-            // Arrange
-            var arenaId = Guid.NewGuid();
-            var fighterId = Guid.NewGuid();
-            var fighterStore = new InMemoryFighterStore();
-            var movementService = new MovementService(fighterStore);
-
-            // Act
-            var moves = await movementService.GetMovements(arenaId, fighterId, 95, 95);
-
-            // Assert
-            moves.First().Locations.ElementAt(1).XLocation.Should().BeCloseTo(94, 2); // Initial location, plus movement (default 1)
-            moves.First().Locations.ElementAt(1).YLocation.Should().BeCloseTo(94, 2);
+            move.HorizontalMovementDirection.Should().Be(HorizontalMovementDirection.Right);
+            move.VerticalMovementDirection.Should().Be(VerticalMovementDirection.Down);
         }
     }
 }

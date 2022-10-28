@@ -16,6 +16,10 @@ namespace IdleBattler_Common.Models.Arena
         public ArenaFighterModel(FighterModel fighter)
         {
             Fighter = fighter;
+            this.XLocation = 0;
+            this.YLocation = 0;
+            this.VerticalMovementDirection = VerticalMovementDirection.Stationary;
+            this.HorizontalMovementDirection = HorizontalMovementDirection.Stationary;
         }
 
         public void SetLocation(ArenaItemLocation location)

@@ -39,7 +39,7 @@ namespace IdleBattler_Common.Enums.Arena
 
         public override bool Equals(object obj)
         {
-            if (ReferenceEquals(this, obj))
+            if (ReferenceEquals(this.Value, ((HorizontalMovementDirection)obj).Value))
             {
                 return true;
             }
@@ -86,7 +86,7 @@ namespace IdleBattler_Common.Enums.Arena
 
         public override bool Equals(object obj)
         {
-            if (ReferenceEquals(this, obj))
+            if (ReferenceEquals(this.Value, ((VerticalMovementDirection)obj).Value))
             {
                 return true;
             }

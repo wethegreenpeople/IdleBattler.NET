@@ -18,13 +18,13 @@ namespace IdleBattler_Server.Arena.Controllers
         }
 
         // GET api/<ArenaMovementController>/5/6
-        [HttpGet("{arenaId}/{fighterId}")]
-        public async Task<MovementModel> Get(Guid arenaId, Guid fighterId, [FromQuery] int? initialX, [FromQuery] int? initialY)
-        {
-            if (initialX == null && initialY == null) return await _movementStore.Get(arenaId, fighterId);
+        //[HttpGet("{arenaId}/{fighterId}")]
+        //public async Task<MovementModel> Get(Guid arenaId, Guid fighterId, [FromQuery] int? initialX, [FromQuery] int? initialY)
+        //{
+        //    if (initialX == null && initialY == null) return await _movementStore.Get(arenaId, fighterId);
 
-            return await _movementStore.Get(arenaId, fighterId, (int)initialX, (int)initialY);
-        }
+        //    return await _movementStore.Get(arenaId, fighterId, (int)initialX, (int)initialY);
+        //}
 
         // POST api/<ArenaMovementController>
         [HttpPost]
