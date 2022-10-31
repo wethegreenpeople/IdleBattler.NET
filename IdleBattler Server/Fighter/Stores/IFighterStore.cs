@@ -1,4 +1,4 @@
-﻿using IdleBattler_Server.Fighter.Models;
+﻿using IdleBattler_Common.Models.Fighter;
 
 namespace IdleBattler_Server.Fighter.Stores
 {

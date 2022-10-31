@@ -6,6 +6,6 @@ namespace IdleBattler_Server.Arena.Stores
     {
         Task<ArenaModel> GetNewArena();
         Task<ArenaModel> GetArena(Guid arenaId);
-        Task<IEnumerable<ArenaEvent>> GetEvents(ArenaModel arena);
+        Task<IEnumerable<ArenaEvent>> GetEvents(ArenaModel arena, int amountOfEvents);
     }
 }

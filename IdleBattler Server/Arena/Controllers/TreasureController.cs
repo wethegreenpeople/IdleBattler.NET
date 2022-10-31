@@ -21,7 +21,7 @@ namespace IdleBattler_Server.Arena.Controllers
         [HttpGet("{arenaId}")]
         public async Task<List<TreasureModel>> Get(Guid arenaId)
         {
-            return await _treasureStore.Get(arenaId);
+            return await _treasureStore.Get(arenaId, 2);
         }
     }
 }

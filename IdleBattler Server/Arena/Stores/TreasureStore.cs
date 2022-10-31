@@ -12,9 +12,9 @@ namespace IdleBattler_Server.Arena.Stores
             _treasureService = treasureService;
         }
 
-        public Task<List<TreasureModel>> Get(Guid arenaId)
+        public Task<List<TreasureModel>> Get(Guid arenaId, int amountOfTreasures)
         {
-            return _treasureService.GetTreasures(arenaId);
+            return _treasureService.GetTreasures(arenaId, amountOfTreasures);
         }
     }
 }

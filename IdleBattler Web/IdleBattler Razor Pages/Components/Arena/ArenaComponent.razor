@@ -2,11 +2,13 @@
 @using Blazor.Extensions
 @using System.Text.Json
 @using IdleBattler_Common.Models.Arena
+@using IdleBattler_Common.Shared
 @implements IDisposable
 
 <h3>Arena</h3>
 
-<BECanvas Width="400" Height="400" @ref="_canvasReference"></BECanvas>
+<progress id="arenaTimeRemaining" value="@_arenaTimeRemaining" max="100"></progress>
+<BECanvas Width="500" Height="400" @ref="_canvasReference"></BECanvas>
 
 <style>
     canvas {
@@ -16,24 +18,55 @@
 
 @code {
     private Canvas2DContext _context;
+    private Guid _arenaId;
+    private double _arenaTimeRemaining = 100.0;
+    private CancellationToken _token;
 
+    private readonly CancellationTokenSource _tokenSource = new CancellationTokenSource();
     private readonly PeriodicTimer _timer = new(TimeSpan.FromMilliseconds(30));
-    private readonly List<ArenaEvent> _treasures = new List<ArenaEvent>();
+    private readonly List<TreasureModel> _treasures = new List<TreasureModel>();
     private readonly List<ArenaEvent> _events = new List<ArenaEvent>();
-    private readonly List<ArenaEvent> _fighters = new List<ArenaEvent>();
+    private readonly List<ArenaFighterModel> _fighters = new List<ArenaFighterModel>();
 
     protected BECanvasComponent _canvasReference;
 
     protected override async Task OnInitializedAsync()
     {
-        _events.AddRange(await GetArenaEvents());
+        _token = _tokenSource.Token;
+        _arenaId = await GetNewArena();
+        _events.AddRange(await GetArenaEvents(_arenaId));
 
-        await RunOnTimer(this._timer, async () => {
-            var arenaEvent = _events.First();
-            // Don't remove the last event
-            if (_events.Count > 1) _events.Remove(arenaEvent);
-            await Draw(this._context, this._canvasReference, arenaEvent);
-        });
+        try
+        {
+            await RunOnTimer(this._timer, this._token, async () =>
+            {
+                var eventsToDraw = await GetEventsToDraw(_events, _fighters);
+                _events.RemoveRange(0, (eventsToDraw).Count);
+
+                try
+                {
+                    if (_events.ElementAt(_events.Count - 1).EventAction == EventAction.EventsNeedToContinue && _events.Count < 500)
+                    {
+                        var drawTask = Draw(this._context, this._canvasReference, eventsToDraw);
+                        var getArenaEventsTask = GetArenaEvents(_arenaId);
+
+                        await Task.WhenAll(drawTask, getArenaEventsTask);
+
+                        _events.AddRange(await getArenaEventsTask);
+                    }
+                    else if (_events.Count <= 0) _tokenSource.Cancel();
+                    else await Draw(this._context, this._canvasReference, eventsToDraw);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Doot");
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            var doot = "";
+        }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -42,7 +75,53 @@
     }
 
     public void Dispose() {
-        this._context.Dispose(); 
+        this._context.Dispose();
+        this._canvasReference = null;
+        this._timer.Dispose();
+        this._tokenSource.Dispose();
+    }
+
+    private async Task<List<ArenaEvent>> GetEventsToDraw(List<ArenaEvent> arenaEvents, List<ArenaFighterModel> activeFighters)
+    {
+        var eventsToDraw = new List<ArenaEvent>();
+        var numberOfMovementEventsToObtain = activeFighters.Count > 0 ? activeFighters.Count : 1;
+        var totalMovementEvents = 0; 
+
+        foreach (var arenaEvent in arenaEvents)
+        {
+            if (totalMovementEvents == numberOfMovementEventsToObtain) break;
+
+            if (arenaEvent.EventAction == EventAction.Movement || arenaEvent.EventAction == EventAction.Fight) totalMovementEvents++;
+
+            eventsToDraw.Add(arenaEvent);
+        }
+
+        return eventsToDraw;
+    }
+
+    private async Task DrawHealthBar(double xLoc, double yLoc, double health, Canvas2DContext context)
+    {
+        await context.BeginPathAsync();
+        var width = 40;
+        await context.RectAsync(xLoc - width / 2, yLoc, width * (health / 100), 5);
+        if (health > 63)
+        {
+            await context.SetFillStyleAsync("green");
+        }
+        else if (health > 37)
+        {
+            await context.SetFillStyleAsync("gold");
+        }
+        else if (health > 13)
+        {
+            await context.SetFillStyleAsync("orange");
+        }
+        else
+        {
+            await context.SetFillStyleAsync("red");
+        }
+        await context.ClosePathAsync();
+        await context.FillAsync();
     }
 
     private async Task DrawFighter(double xLoc, double yLoc, Canvas2DContext context) {
@@ -53,66 +132,78 @@
         await context.ClosePathAsync();
     }
 
-    private async Task DrawAllFighters(List<ArenaEvent> fighters, BECanvasComponent canvas, Canvas2DContext context)
+    private async Task DrawAllFighters(List<ArenaFighterModel> fighters, BECanvasComponent canvas, Canvas2DContext context)
     {
         foreach (var fighter in fighters)
         {
-            double xLocation = canvas.Width * (fighter.EventLocation.XLocation / 100.0); // Server returns a "percentage" location that we can use to draw a location based on canvas size
-            double yLocation = canvas.Height * (fighter.EventLocation.YLocation / 100.0);
+            double xLocation = canvas.Width * (fighter.XLocation / 100.0); // Server returns a "percentage" location that we can use to draw a location based on canvas size
+            double yLocation = canvas.Height * (fighter.YLocation / 100.0);
             await DrawFighter(xLocation, yLocation, context);
+            await DrawHealthBar(xLocation, yLocation - 23, fighter.Fighter.Health, context);
         }
     }
 
-    private async Task DrawTreasures(List<ArenaEvent> treasures, BECanvasComponent canvas, Canvas2DContext context)
+    private async Task DrawTreasures(List<TreasureModel> treasures, BECanvasComponent canvas, Canvas2DContext context)
     {
         foreach (var treasure in treasures)
         {
-            var xLocation = canvas.Width * (treasure.EventLocation.XLocation / 100.0);
-            var yLocation = canvas.Height * (treasure.EventLocation.YLocation / 100.0);
+            var xLocation = canvas.Width * (treasure.XLocation / 100.0);
+            var yLocation = canvas.Height * (treasure.YLocation / 100.0);
+            await context.SetFillStyleAsync("blue");
             await context.FillRectAsync(xLocation, yLocation, 10, 10);
         }
     }
 
-    private async Task Draw(Canvas2DContext context, BECanvasComponent canvas, ArenaEvent arenaEvent) {
+    private async Task Draw(Canvas2DContext context, BECanvasComponent canvas, List<ArenaEvent> arenaEvents) {
         if (context == null || canvas == null) return;
         await context.ClearRectAsync(0, 0, canvas.Width, canvas.Height);
 
-        if (arenaEvent.EventAction == EventAction.SpawnTreasure) _treasures.Add(arenaEvent);
-        if (arenaEvent.EventAction == EventAction.Loot) _treasures.Remove(_treasures.Single(s => s.ObjectId == arenaEvent.ObjectId));
+        foreach (var arenaEvent in arenaEvents)
+        {
+            if (arenaEvent.EventAction == EventAction.SpawnTreasure) _treasures.Add(JsonSerializer.Deserialize<TreasureModel>(arenaEvent.EventObject.ToString()));
+            if (arenaEvent.EventAction == EventAction.Loot) _treasures.Remove(_treasures.FirstOrDefault(s => s.Id == arenaEvent.ObjectId));
 
-        if (arenaEvent.EventAction == EventAction.SpawnFighter) _fighters.Add(arenaEvent);
-        if (arenaEvent.EventAction == EventAction.Movement) _fighters.Single(s => s.ObjectId == arenaEvent.ObjectId).EventLocation = arenaEvent.EventLocation;
+            if (arenaEvent.EventAction == EventAction.SpawnFighter) _fighters.Add(JsonSerializer.Deserialize<ArenaFighterModel>(arenaEvent.EventObject.ToString()));
+            if (arenaEvent.EventAction == EventAction.Movement || arenaEvent.EventAction == EventAction.Fight)
+            {
+                _fighters.Remove(_fighters.FirstOrDefault(s => s.Fighter.Id == arenaEvent.ObjectId));
+                var deserializedFighter = JsonSerializer.Deserialize<ArenaFighterModel>(arenaEvent.EventObject.ToString());
+                _fighters.Add(deserializedFighter);
+            }
+            if (arenaEvent.EventAction == EventAction.Death) _fighters.Remove(_fighters.FirstOrDefault(s => s.Fighter.Id == arenaEvent.ObjectId));
+            if (arenaEvent.EventAction == EventAction.ArenaTimeUpdate) UpdateArenaTime(JsonSerializer.Deserialize<double>(arenaEvent.EventObject.ToString()));
+        }
 
         await DrawAllFighters(_fighters, canvas, context);
         await DrawTreasures(_treasures, canvas, context);
     }
 
-    private void CalculateTreasureCollisions(List<TreasureModel> treasures, LocationModel fighterLocation)
-    {
-        treasures.RemoveAll(s => {
-            var xInRange = Math.Abs(s.XLocation - fighterLocation.XLocation) <= 5;
-            var yInRange = Math.Abs(s.YLocation - fighterLocation.YLocation) <= 5;
-            return xInRange && yInRange;
-        });
-    }
-
-    private async Task RunOnTimer(PeriodicTimer timer, Func<Task> function) {
+    private async Task RunOnTimer(PeriodicTimer timer, CancellationToken token, Func<Task> function) {
         try {
-            while (await timer.WaitForNextTickAsync())
+            while (await timer.WaitForNextTickAsync(token))
             {
                 await function();
             }
         }
         catch (Exception ex) {
+            Console.WriteLine(ex.Message);
         }
     }
 
-    private async Task<List<ArenaEvent>> GetArenaEvents()
+    private async Task<Guid> GetNewArena()
     {
         var client = new HttpClient();
 
-        var arenaGuid = Guid.NewGuid();
-        var streamTask = await client.GetStreamAsync($"https://localhost:7156/api/arena/events/{arenaGuid}");
+        var response = await client.PostAsync($"https://localhost:7156/api/arena", null);
+        if (response.StatusCode == System.Net.HttpStatusCode.OK) return JsonSerializer.Deserialize<Guid>(response.Content.ReadAsStream());
+
+        return Guid.NewGuid();
+    }
+
+    private async Task<List<ArenaEvent>> GetArenaEvents(Guid arenaId)
+    {
+        var client = new HttpClient();
+        var streamTask = await client.GetStreamAsync($"https://localhost:7156/api/arena/events/{arenaId}");
         try
         {
             return JsonSerializer.Deserialize<List<ArenaEvent>>(streamTask);
@@ -123,50 +214,9 @@
         }
     }
 
-    private async Task<MovementModel> GetRandomMovements() 
+    private void UpdateArenaTime(double arenaTime)
     {
-        var client = new HttpClient();
-
-        var arenaGuid = Guid.NewGuid();
-        var streamTask = await client.GetStreamAsync($"https://localhost:7156/api/arenamovement/{arenaGuid.ToString()}/{arenaGuid.ToString()}");
-        try {
-            return JsonSerializer.Deserialize<MovementModel>(streamTask);
-        } 
-        catch (Exception ex) 
-        {
-            return null;
-        }
-    }
-
-    private async Task<MovementModel> GetMovementsFromLocation(int xLocation, int yLocation)
-    {
-        var client = new HttpClient();
-
-        var arenaGuid = Guid.NewGuid();
-        var streamTask = await client.GetStreamAsync($"https://localhost:7156/api/arenamovement/{arenaGuid.ToString()}/{arenaGuid.ToString()}?initialX={xLocation}&initialY={yLocation}");
-        try
-        {
-            return JsonSerializer.Deserialize<MovementModel>(streamTask);
-        }
-        catch (Exception ex)
-        {
-            return null;
-        }
-    }
-
-    private async Task<List<TreasureModel>> GetArenaTreasures()
-    {
-        var client = new HttpClient();
-
-        var arenaGuid = Guid.NewGuid();
-        var streamTask = await client.GetStreamAsync($"https://localhost:7156/api/treasure/{arenaGuid.ToString()}");
-        try
-        {
-            return JsonSerializer.Deserialize<List<TreasureModel>>(streamTask);
-        }
-        catch (Exception ex)
-        {
-            return null;
-        }
+        _arenaTimeRemaining = 100 - arenaTime;
+        StateHasChanged();
     }
 }

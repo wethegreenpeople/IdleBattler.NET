@@ -21,6 +21,10 @@ namespace IdleBattler_Common.Models.Arena
         public static EventAction Loot => new(nameof(Loot));
         public static EventAction SpawnFighter => new(nameof(SpawnFighter));
         public static EventAction SpawnTreasure => new(nameof(SpawnTreasure));
+        public static EventAction EventsNeedToContinue => new(nameof(EventsNeedToContinue));
+        public static EventAction Death => new(nameof(Death));
+        public static EventAction ArenaTimeUpdate => new(nameof(ArenaTimeUpdate));
+        public static EventAction ArenaBattleComplete = new(nameof(ArenaBattleComplete));
 
         public static bool operator ==(EventAction obj1, EventAction obj2)
         {
@@ -34,7 +38,7 @@ namespace IdleBattler_Common.Models.Arena
 
         public override bool Equals(object obj)
         {
-            if (ReferenceEquals(this, obj))
+            if (ReferenceEquals(this.Value, ((EventAction)obj).Value))
             {
                 return true;
             }
@@ -48,7 +52,7 @@ namespace IdleBattler_Common.Models.Arena
     public class ArenaEvent
     {
         public EventAction EventAction { get; set; }
-        public ArenaItemLocation EventLocation { get; set; }
+        public Object EventObject { get; set; }
         public Guid ObjectId { get; set; }
 
         public ArenaEvent()
@@ -56,10 +60,10 @@ namespace IdleBattler_Common.Models.Arena
 
         }
 
-        public ArenaEvent(EventAction eventAction, ArenaItemLocation eventLocation, Guid objectId)
+        public ArenaEvent(EventAction eventAction, Object eventLocation, Guid objectId)
         {
             EventAction = eventAction;
-            EventLocation = eventLocation;
+            EventObject = eventLocation;
             ObjectId = objectId;
         }
     }

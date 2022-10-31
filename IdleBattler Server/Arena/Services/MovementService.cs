@@ -2,7 +2,6 @@
 using IdleBattler_Common.Models.Arena;
 using IdleBattler_Common.Shared;
 using IdleBattler_Common.Utils;
-using IdleBattler_Server.Fighter.Models;
 using IdleBattler_Server.Fighter.Stores;
 
 namespace IdleBattler_Server.Arena.Services
@@ -13,23 +12,24 @@ namespace IdleBattler_Server.Arena.Services
         {
         }
 
-        public async Task<ArenaItemLocation> GetNextMovement(Guid arenaId, ArenaFighterModel arenaFighter)
+        public async Task<ArenaItemLocation> GetNextMovement(Guid arenaId, ArenaFighterModel arenaFighter, Random rand)
         {
-            // Switch direction if already at edge
             var verticalDirection = arenaFighter.VerticalMovementDirection;
-            verticalDirection = arenaFighter.YLocation <= 5 && arenaFighter.VerticalMovementDirection == VerticalMovementDirection.Up
-                ? VerticalMovementDirection.ReverseDirection(arenaFighter.VerticalMovementDirection)
+            var horizontalDirection = arenaFighter.HorizontalMovementDirection;
+
+            // Switch direction if already at edge
+            verticalDirection = arenaFighter.YLocation <= 5 && (arenaFighter.VerticalMovementDirection == VerticalMovementDirection.Up)
+                ? VerticalMovementDirection.ReverseDirection(arenaFighter.VerticalMovementDirection, rand)
                 : verticalDirection;
             verticalDirection = arenaFighter.YLocation >= 95 && arenaFighter.VerticalMovementDirection == VerticalMovementDirection.Down
-                ? VerticalMovementDirection.ReverseDirection(arenaFighter.VerticalMovementDirection)
+                ? VerticalMovementDirection.ReverseDirection(arenaFighter.VerticalMovementDirection, rand)
                 : verticalDirection;
 
-            var horizontalDirection = arenaFighter.HorizontalMovementDirection;
             horizontalDirection = arenaFighter.XLocation <= 5 && arenaFighter.HorizontalMovementDirection == HorizontalMovementDirection.Left
-                ? HorizontalMovementDirection.ReverseDirection(arenaFighter.HorizontalMovementDirection)
+                ? HorizontalMovementDirection.ReverseDirection(arenaFighter.HorizontalMovementDirection, rand)
                 : horizontalDirection;
             horizontalDirection = arenaFighter.XLocation >= 95 && arenaFighter.HorizontalMovementDirection == HorizontalMovementDirection.Right
-                ? HorizontalMovementDirection.ReverseDirection(arenaFighter.HorizontalMovementDirection)
+                ? HorizontalMovementDirection.ReverseDirection(arenaFighter.HorizontalMovementDirection, rand)
                 : horizontalDirection;
 
             return MoveFighter(arenaFighter, verticalDirection, horizontalDirection);

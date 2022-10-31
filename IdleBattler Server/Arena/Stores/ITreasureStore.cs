@@ -4,6 +4,6 @@ namespace IdleBattler_Server.Arena.Stores
 {
     public interface ITreasureStore
     {
-        Task<List<TreasureModel>> Get(Guid arenaId);
+        Task<List<TreasureModel>> Get(Guid arenaId, int amountOfTreasures);
     }
 }

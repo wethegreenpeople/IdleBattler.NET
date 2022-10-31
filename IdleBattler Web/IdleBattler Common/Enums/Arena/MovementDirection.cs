@@ -13,8 +13,9 @@ namespace IdleBattler_Common.Enums.Arena
         public static HorizontalMovementDirection Left => new(nameof(Left));
         public static HorizontalMovementDirection Right => new(nameof(Right));
 
-        public static HorizontalMovementDirection ReverseDirection(HorizontalMovementDirection currentDirection)
+        public static HorizontalMovementDirection ReverseDirection(HorizontalMovementDirection currentDirection, Random rand)
         {
+            var directions = new List<HorizontalMovementDirection>() { Left, Stationary, Right };
             if (currentDirection == Left) return Right;
             else if (currentDirection == Right) return Left;
             else return Stationary;
@@ -60,8 +61,9 @@ namespace IdleBattler_Common.Enums.Arena
         public static VerticalMovementDirection Up => new(nameof(Up));
         public static VerticalMovementDirection Down => new(nameof(Down));
 
-        public static VerticalMovementDirection ReverseDirection(VerticalMovementDirection currentDirection)
+        public static VerticalMovementDirection ReverseDirection(VerticalMovementDirection currentDirection, Random rand)
         {
+            var directions = new List<VerticalMovementDirection>() { Up, Stationary, Down };
             if (currentDirection == Up) return Down;
             else if (currentDirection == Down) return Up;
             else return Stationary;

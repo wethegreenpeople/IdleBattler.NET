@@ -21,40 +21,22 @@ namespace IdleBattler_Server.Arena.Controllers
         public async Task<IEnumerable<ArenaEvent>> GetArenaEvents(Guid arenaId)
         {
             var arena = await _arenaStore.GetArena(arenaId);
-            var events = await _arenaStore.GetEvents(arena);
+            var events = await _arenaStore.GetEvents(arena, 100);
             return events;
         }
 
         // GET: api/<ArenaController>
-        [HttpGet]
-        public async Task<IEnumerable<ArenaModel>> Get()
+        [HttpGet("{arenaId}")]
+        public async Task<ArenaModel> Get(Guid arenaId)
         {
-            return new List<ArenaModel>() { await _arenaStore.GetNewArena() };
-        }
-
-        // GET api/<ArenaController>/5
-        [HttpGet("{id}")]
-        public string Get(int id)
-        {
-            return "value";
+            return await _arenaStore.GetArena(arenaId);
         }
 
         // POST api/<ArenaController>
         [HttpPost]
-        public void Post([FromBody] string value)
+        public async Task<Guid> CreateArena()
         {
-        }
-
-        // PUT api/<ArenaController>/5
-        [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
-        {
-        }
-
-        // DELETE api/<ArenaController>/5
-        [HttpDelete("{id}")]
-        public void Delete(int id)
-        {
+            return (await _arenaStore.GetNewArena()).Id;
         }
     }
 }

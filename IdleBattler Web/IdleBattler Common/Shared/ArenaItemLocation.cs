@@ -13,6 +13,7 @@ namespace IdleBattler_Common.Shared
         public int YLocation { get; set; }
         public VerticalMovementDirection VerticalMovementDirection { get; set; }
         public HorizontalMovementDirection HorizontalMovementDirection { get; set; }
+        public bool HasSpawned { get; private set; } = false;
 
         public ArenaItemLocation()
         {
@@ -33,6 +34,11 @@ namespace IdleBattler_Common.Shared
             YLocation = yloc;
             VerticalMovementDirection = vertDirection;
             HorizontalMovementDirection = horiDirection;
+        }
+
+        public void SetHasSpawned(bool hasSpawned)
+        {
+            this.HasSpawned = hasSpawned;
         }
     }
 }

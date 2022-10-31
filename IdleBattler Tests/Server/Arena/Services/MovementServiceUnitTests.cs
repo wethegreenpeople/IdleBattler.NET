@@ -2,7 +2,6 @@
 using IdleBattler_Common.Models.Arena;
 using IdleBattler_Server.Arena.Services;
 using IdleBattler_Server.Fighter.Stores;
-using IdleBattler_Server.Fighter.Models;
 using IdleBattler_Common.Enums.Arena;
 using IdleBattler_Common.Shared;
 using System;
@@ -10,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using IdleBattler_Common.Models.Fighter;
 
 namespace IdleBattler_Tests.Server.Arena.Services
 {
@@ -61,12 +61,14 @@ namespace IdleBattler_Tests.Server.Arena.Services
         {
             // Arrange
             var arenaId = Guid.NewGuid();
-            var fighter = new ArenaFighterModel(new FighterModel(Guid.NewGuid()));
-            fighter.SetLocation(new ArenaItemLocation(20, 25, VerticalMovementDirection.Up, HorizontalMovementDirection.Left));
+            var fighter = new FighterModel(Guid.NewGuid());
+            fighter.SetInitialStats();
+            var arenaFighter = new ArenaFighterModel(fighter);
+            arenaFighter.SetLocation(new ArenaItemLocation(20, 25, VerticalMovementDirection.Up, HorizontalMovementDirection.Left));
             var movementService = new MovementService();
 
             // Act
-            var move = await movementService.GetNextMovement(arenaId, fighter);
+            var move = await movementService.GetNextMovement(arenaId, arenaFighter);
 
             // Assert
             move.XLocation.Should().Be(19);
