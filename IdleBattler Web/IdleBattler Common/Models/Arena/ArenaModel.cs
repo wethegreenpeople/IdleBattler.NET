@@ -5,12 +5,16 @@
         public Guid Id { get; private set; }
         public List<ArenaFighterModel> Fighters { get; private set; } = new List<ArenaFighterModel>();
         public List<TreasureModel> Treasures { get; private set; } = new List<TreasureModel>();
-        public DateTime CreatedTime { get; private set; }
+        public DateTime StartedTime { get; private set; }
 
-        public ArenaModel(Guid id, DateTime createdTime)
+        public ArenaModel(Guid id)
         {
             Id = id;
-            CreatedTime = createdTime;
+        }
+
+        public void SetStartTime(DateTime startTime)
+        {
+            StartedTime = startTime;
         }
     }
 }

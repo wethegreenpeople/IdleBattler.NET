@@ -41,11 +41,14 @@
             await RunOnTimer(this._timer, this._token, async () =>
             {
                 var eventsToDraw = await GetEventsToDraw(_events, _fighters);
-                _events.RemoveRange(0, (eventsToDraw).Count);
 
                 try
                 {
-                    if (_events.ElementAt(_events.Count - 1).EventAction == EventAction.EventsNeedToContinue && _events.Count < 500)
+                    if (_events.Count <= 0) 
+                    {
+                        _tokenSource.Cancel();
+                    }
+                    else if (_events.ElementAt(_events.Count - 1).EventAction == EventAction.EventsNeedToContinue && _events.Count < 500)
                     {
                         var drawTask = Draw(this._context, this._canvasReference, eventsToDraw);
                         var getArenaEventsTask = GetArenaEvents(_arenaId);
@@ -54,12 +57,14 @@
 
                         _events.AddRange(await getArenaEventsTask);
                     }
-                    else if (_events.Count <= 0) _tokenSource.Cancel();
                     else await Draw(this._context, this._canvasReference, eventsToDraw);
+
+
+                    _events.RemoveRange(0, (eventsToDraw).Count);
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("Doot");
+                    _tokenSource.Cancel();
                 }
             });
         }
@@ -89,6 +94,11 @@
 
         foreach (var arenaEvent in arenaEvents)
         {
+            if (arenaEvent.EventAction == EventAction.EventsNeedToContinue)
+            {
+                eventsToDraw.Add(arenaEvent);
+                break;
+            }
             if (totalMovementEvents == numberOfMovementEventsToObtain) break;
 
             if (arenaEvent.EventAction == EventAction.Movement || arenaEvent.EventAction == EventAction.Fight) totalMovementEvents++;

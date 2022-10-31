@@ -27,18 +27,16 @@ namespace IdleBattler_Server.Arena.Stores
 
         public async Task<ArenaModel> GetNewArena()
         {
-            var arena = new ArenaModel(Guid.NewGuid(), DateTime.Now);
+            var arena = new ArenaModel(Guid.NewGuid());
+            arena.SetStartTime(DateTime.Now);
             arena.Treasures.AddRange(await _treasureStore.Get(arena.Id, 2));
 
-            for (int i = 0; i < 4; ++i)
-            {
-                var fighter = await _fighterStore.Get(Guid.NewGuid());
-                fighter.SetInitialStats();
-                var fighterRand = new Random(arena.Id.ToString().GetHashCode() + fighter.Id.ToString().GetHashCode());
-                var arenaFighter = new ArenaFighterModel(fighter);
-                arenaFighter.SetLocation(new ArenaItemLocation(fighterRand.Next(6, 95), fighterRand.Next(6, 95), VerticalMovementDirection.GetRandomDirection(), HorizontalMovementDirection.GetRandomDirection()));
-                arena.Fighters.Add(arenaFighter);
-            }
+            var fighter = await _fighterStore.Get(Guid.NewGuid());
+            fighter.SetInitialStats();
+            var fighterRand = new Random(arena.Id.ToString().GetHashCode() + fighter.Id.ToString().GetHashCode());
+            var arenaFighter = new ArenaFighterModel(fighter);
+            arenaFighter.SetLocation(new ArenaItemLocation(fighterRand.Next(6, 95), fighterRand.Next(6, 95), VerticalMovementDirection.GetRandomDirection(), HorizontalMovementDirection.GetRandomDirection()));
+            arena.Fighters.Add(arenaFighter);
 
             _arenas.Add(arena);
             return arena;
@@ -130,7 +128,7 @@ namespace IdleBattler_Server.Arena.Stores
                 }
             }
 
-            var totalSecondsSinceCreated = DateTime.Now.Subtract(arena.CreatedTime).TotalSeconds;
+            var totalSecondsSinceCreated = DateTime.Now.Subtract(arena.StartedTime).TotalSeconds;
             events.Add(new ArenaEvent(EventAction.ArenaTimeUpdate, (totalSecondsSinceCreated / 25) * 100, Guid.Empty));
 
             if (!hasFinishedCondition(arena))
@@ -145,11 +143,16 @@ namespace IdleBattler_Server.Arena.Stores
                 var noMoreTreasures = arena.Treasures.Count <= 0;
                 var onlyOneFighter = arena.Fighters.Where(s => s.Fighter.Health > 0).Count() <= 1;
 
-                var totalSecondsSinceCreated = DateTime.Now.Subtract(arena.CreatedTime).TotalSeconds;
+                var totalSecondsSinceCreated = DateTime.Now.Subtract(arena.StartedTime).TotalSeconds;
                 var timeRanOut = totalSecondsSinceCreated >= 30;
 
                 return noMoreTreasures || onlyOneFighter || timeRanOut;
             }
+        }
+
+        public Task<List<ArenaModel>> GetOpenArenas()
+        {
+            return Task.FromResult(_arenas.Where(s => s.Fighters.Count < 4).ToList());
         }
     }
 }

@@ -1,9 +1,14 @@
 using IdleBattler_Server.Arena.Services;
 using IdleBattler_Server.Arena.Stores;
 using IdleBattler_Server.Fighter.Stores;
+using IdleBattler_Server.Jobs;
+using Quartz;
+using System.Collections.Specialized;
 
 var builder = WebApplication.CreateBuilder(args);
 var _corsOrigins = "_corsOrigins";
+
+
 
 // Add services to the container.
 
@@ -23,6 +28,26 @@ builder.Services.AddCors(options =>
     {
         builder.WithOrigins("http://localhost:7177", "https://localhost:7177");
     });
+});
+
+builder.Services.AddQuartz(q =>
+{
+    // base quartz scheduler, job and trigger configuration
+    q.UseMicrosoftDependencyInjectionScopedJobFactory();
+
+    var arenaFighterJob = new JobKey("AddArenaFighterJob");
+    q.AddJob<AddFightersJob>(opts => opts.WithIdentity(arenaFighterJob));
+    q.AddTrigger(opt => opt
+        .ForJob(arenaFighterJob)
+        .WithIdentity("AddFighterJob-Trigger")
+        .WithCronSchedule("0/10 * * * * ?"));
+});
+
+// ASP.NET Core hosting
+builder.Services.AddQuartzServer(options =>
+{
+    // when shutting down we want jobs to complete gracefully
+    options.WaitForJobsToComplete = true;
 });
 
 var app = builder.Build();
