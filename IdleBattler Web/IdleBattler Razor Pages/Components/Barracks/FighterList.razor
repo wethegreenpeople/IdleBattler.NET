@@ -1,0 +1,27 @@
+﻿@using IdleBattler_Common.Models.Fighter
+@using System.Text.Json
+
+<h3>FighterList</h3>
+
+<div style="border:1px solid black;">
+    @if (UserOwnedFighters.Count > 0)
+   {
+        @foreach (var fighter in UserOwnedFighters)
+        {
+            <div class="form-check">
+                <input class="form-check-input" type="radio" name="fighterRadioSelection" id="@($"radio-{fighter.Id}")" @onchange="(() => FighterSelectedCallback(fighter))">
+                <label class="form-check-label" for="flexRadioDefault1">
+                    @fighter.Id
+                </label>
+            </div>
+        }
+   }
+</div>
+
+@code {
+    [Parameter]
+    public List<FighterModel> UserOwnedFighters { get; set; }
+
+    [Parameter]
+    public Action<FighterModel> FighterSelectedCallback { get; set; }
+}

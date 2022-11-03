@@ -1,8 +1,10 @@
 ﻿@using IdleBattler_Razor_Pages.Components.Arena;
-@page "/arena"
+@using IdleBattler_Common.Models.Arena
+@page "/arena/{ArenaId:guid}"
 
-<ArenaComponent />
+<ArenaComponent ArenaId=(ArenaId) />
 
 @code {
-
+    [Parameter]
+    public Guid ArenaId { get; set; }
 }

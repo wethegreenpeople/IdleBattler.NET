@@ -1,0 +1,76 @@
+﻿@using IdleBattler_Razor_Pages.Components.Barracks
+@using IdleBattler_Common.Models.Fighter
+@using IdleBattler_Common.Models.Equipment
+@using System.Text.Json
+
+@page "/barracks"
+
+<h3>BarracksPage</h3>
+
+<div class="row">
+    <div class="col">
+        <FighterList UserOwnedFighters="_userOwnedFighters" FighterSelectedCallback="OnFighterSelected" />
+    </div>
+    <div class="col">
+        <FighterStats OnEquipmentDeselected="OnEquipmentDeselected" SelectedFighter="_selectedFighter" />
+    </div>
+    <div class="col">
+        <AvailableItems AvailableEquipment="_availableEquipment" EquipmentListAvailable="(_selectedFighter != null)" OnEquipmentSelected="OnEquipmentSelected" />
+    </div>
+</div>
+
+@code {
+    private FighterModel _selectedFighter;
+    private List<FighterModel> _userOwnedFighters = new List<FighterModel>();
+    private List<EquipmentModel> _availableEquipment = new List<EquipmentModel>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (_availableEquipment.Count == 0)
+        {
+            _availableEquipment.Add(new EquipmentModel(1, "Gun", 0, 2, -1, 0));
+        }
+
+        if (_userOwnedFighters.Count == 0)
+        {
+            var fighter = await CreateFighter();
+            _userOwnedFighters.Add(fighter);
+        }
+
+    }
+
+    private void OnFighterSelected(FighterModel fighter)
+    {
+        _selectedFighter = fighter;
+        StateHasChanged();
+    }
+
+    private void OnEquipmentSelected(EquipmentModel equipment)
+    {
+        _selectedFighter.AddEquipment(equipment);
+        _availableEquipment.Remove(equipment);
+        StateHasChanged();
+    }
+
+    private void OnEquipmentDeselected(EquipmentModel equipment)
+    {
+        _availableEquipment.Add(equipment);
+        _selectedFighter.RemoveEquipment(equipment);
+        StateHasChanged();
+    }
+
+    private async Task<FighterModel> CreateFighter()
+    {
+        var client = new HttpClient();
+        var streamTask = await client.PostAsync($"https://localhost:7156/api/Fighter/create", null);
+        try
+        {
+            if (streamTask.IsSuccessStatusCode) return JsonSerializer.Deserialize<FighterModel>(streamTask.Content.ReadAsStream());
+            return null;
+        }
+        catch (Exception ex)
+        {
+            return null;
+        }
+    }
+}

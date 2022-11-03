@@ -3,6 +3,8 @@ using IdleBattler_Common.Models.Arena;
 using IdleBattler_Common.Models.Fighter;
 using IdleBattler_Common.Shared;
 using IdleBattler_Server.Fighter.Stores;
+using IdleBattler_Server.Hubs;
+using Microsoft.AspNetCore.SignalR;
 
 namespace IdleBattler_Server.Arena.Stores
 {
@@ -11,13 +13,15 @@ namespace IdleBattler_Server.Arena.Stores
         private readonly ITreasureStore _treasureStore;
         private readonly IMovementStore _movementStore;
         private readonly IFighterStore _fighterStore;
+        private readonly IHubContext<ArenaHub> _hubContext;
         private static readonly List<ArenaModel> _arenas = new();
 
-        public ArenaInMemoryStore(ITreasureStore treasureStore, IMovementStore movementStore, IFighterStore fighterStore)
+        public ArenaInMemoryStore(ITreasureStore treasureStore, IMovementStore movementStore, IFighterStore fighterStore, IHubContext<ArenaHub> hubContext)
         {
             _treasureStore = treasureStore;
             _movementStore = movementStore;
             _fighterStore = fighterStore;
+            _hubContext = hubContext;
         }
 
         public async Task<ArenaModel> GetArena(Guid arenaId)
@@ -28,10 +32,9 @@ namespace IdleBattler_Server.Arena.Stores
         public async Task<ArenaModel> GetNewArena()
         {
             var arena = new ArenaModel(Guid.NewGuid());
-            arena.SetStartTime(DateTime.Now);
             arena.Treasures.AddRange(await _treasureStore.Get(arena.Id, 2));
 
-            var fighter = await _fighterStore.Get(Guid.NewGuid());
+            var fighter = await _fighterStore.CreateNewFighter();
             fighter.SetInitialStats();
             var fighterRand = new Random(arena.Id.ToString().GetHashCode() + fighter.Id.ToString().GetHashCode());
             var arenaFighter = new ArenaFighterModel(fighter);
@@ -76,7 +79,7 @@ namespace IdleBattler_Server.Arena.Stores
                         }, null);
                         if (treasureInDistance != null)
                         {
-                            events.Add(new ArenaEvent(EventAction.Loot, treasureInDistance, treasureInDistance.Id));
+                            events.Add(new ArenaEvent(EventAction.Loot, treasureInDistance, arenaFighter.Fighter.Id));
                             arena.Treasures.Remove(treasureInDistance);
                         }
 
@@ -135,6 +138,11 @@ namespace IdleBattler_Server.Arena.Stores
             {
                 events.Add(new ArenaEvent(EventAction.EventsNeedToContinue, null, Guid.Empty));
             }
+            else
+            {
+                arena.SetHasEnded(true);
+                await _hubContext.Clients.All.SendAsync(ArenaHubConstants.ArenaUpdate, arena.Id.ToString());
+            }
 
             return events;
 
@@ -152,7 +160,29 @@ namespace IdleBattler_Server.Arena.Stores
 
         public Task<List<ArenaModel>> GetOpenArenas()
         {
-            return Task.FromResult(_arenas.Where(s => s.Fighters.Count < 4).ToList());
+            return Task.FromResult(_arenas.Where(s => !s.HasStarted || s.Fighters.Count < 4).ToList());
+        }
+
+        public Task<List<ArenaModel>> GetStartedArenas()
+        {
+            return Task.FromResult(_arenas.Where(s => s.HasStarted && !s.HasEnded).ToList());
+        }
+
+        public async Task SetArenaStarted(Guid arenaId)
+        {
+            _arenas.FirstOrDefault(s => s.Id == arenaId).SetHasStarted(true);
+        }
+
+        public async Task<ArenaModel> AddFighterToArena(Guid arenaId, Guid fighterId)
+        {
+            var arenaTask = GetArena(arenaId);
+            var fighterTask = _fighterStore.Get(fighterId);
+            await Task.WhenAll(arenaTask, fighterTask);
+
+            if ((await arenaTask).Fighters.Count >= 4) return await arenaTask;
+
+            (await arenaTask).AddFighter(await fighterTask);
+            return await arenaTask;
         }
     }
 }

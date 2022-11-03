@@ -1,0 +1,129 @@
+﻿@using IdleBattler_Common.Models.Arena
+@using IdleBattler_Common.Models.Fighter
+@using System.Text.Json
+@using Microsoft.AspNetCore.Components.Forms
+
+@inject NavigationManager NavigationManager
+
+<h3>Open Arenas</h3>
+
+<!-- Modal -->
+<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="exampleModalLabel">Choose Fighter</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                @if (_userOwnedFighters.Count > 0)
+                {
+                    @foreach (var fighter in _userOwnedFighters)
+                    {
+                         <div class="form-check">
+                            <input class="form-check-input" type="radio" name="fighterRadioSelection" id="@($"radio-{fighter.Id}")" @onchange="(() => OnFighterSelected(fighter.Id))">
+                            <label class="form-check-label" for="flexRadioDefault1">
+                                @fighter.Id
+                            </label>
+                        </div>
+                    }
+                }
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal" disabled="@(_selectedFighterId == null)" @onclick="(() => EnterArena(_selectedFighterId.Value, _selectedArenaId.Value))">Enter fighter</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<ul>
+    @foreach (var arena in _openArenas)
+    {
+        <li><a data-bs-toggle="modal" data-bs-target="#exampleModal" @onclick="@(() => _selectedArenaId = arena.Id)">@arena.Id</a></li>
+    }
+</ul>
+
+@code {
+    private List<ArenaModel> _openArenas = new List<ArenaModel>();
+    private Guid? _selectedFighterId = null;
+    private Guid? _selectedArenaId = null;
+
+    private readonly List<FighterModel> _userOwnedFighters = new List<FighterModel>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _openArenas = await GetOpenArenas();
+        if (_userOwnedFighters.Count == 0) 
+        {
+            var fighter = await CreateFighter();
+            _userOwnedFighters.Add(fighter);
+        }
+    }
+
+    private async Task<List<ArenaModel>> GetOpenArenas()
+    {
+        var client = new HttpClient();
+        var streamTask = await client.GetStreamAsync($"https://localhost:7156/api/arena/open");
+        try
+        {
+            return JsonSerializer.Deserialize<List<ArenaModel>>(streamTask);
+        }
+        catch (Exception ex)
+        {
+            return null;
+        }
+    }
+
+    private void NavigateToArenaPage(Guid ArenaId)
+    {
+        NavigationManager.NavigateTo($"/arena/{ArenaId}");
+    }
+
+    private async Task<List<FighterModel>> GetUserOwnedFighters(Guid userId)
+    {
+        var client = new HttpClient();
+        var streamTask = await client.GetStreamAsync($"https://localhost:7156/api/fighter/{userId}");
+        try
+        {
+            return JsonSerializer.Deserialize<List<FighterModel>>(streamTask);
+        }
+        catch (Exception ex)
+        {
+            return null;
+        }
+    }
+
+    private async Task<FighterModel> CreateFighter()
+    {
+        var client = new HttpClient();
+        var streamTask = await client.PostAsync($"https://localhost:7156/api/Fighter/create", null);
+        try
+        {
+            if (streamTask.IsSuccessStatusCode) return JsonSerializer.Deserialize<FighterModel>(streamTask.Content.ReadAsStream());
+            return null;
+        }
+        catch (Exception ex)
+        {
+            return null;
+        }
+    }
+
+    private async Task AddFighterToArena(Guid arenaId, Guid fighterId)
+    {
+        var client = new HttpClient();
+        var streamTask = await client.PostAsync($"https://localhost:7156/api/arena/{arenaId}/addfighter/{fighterId}", null);
+        var result = streamTask.StatusCode;
+    }
+
+    private void OnFighterSelected(Guid fighterId)
+    {
+        _selectedFighterId = fighterId;
+    }
+
+    private async void EnterArena(Guid fighterId, Guid arenaId)
+    {
+        await AddFighterToArena(arenaId, fighterId);
+        NavigateToArenaPage(arenaId);
+    }
+}

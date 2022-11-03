@@ -1,0 +1,28 @@
+﻿@using IdleBattler_Common.Models.Equipment
+
+<h3>AvailableItems</h3>
+
+<div style="border:1px solid black;">
+     @if (EquipmentListAvailable)
+     {
+        <ul class="list-group list-group">
+            @foreach (var equipment in AvailableEquipment)
+            {
+                <li class="list-group-item" @onclick="(() => OnEquipmentSelected(equipment))">@equipment.Name</li>
+            }
+        </ul>
+     }
+</div>
+
+@code {
+
+
+    [Parameter]
+    public Action<EquipmentModel> OnEquipmentSelected { get; set; }
+
+    [Parameter]
+    public bool EquipmentListAvailable { get; set; }
+
+    [Parameter]
+    public List<EquipmentModel> AvailableEquipment { get; set; }
+}

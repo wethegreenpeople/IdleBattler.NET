@@ -3,6 +3,8 @@ using IdleBattler_Common.Models.Arena;
 using IdleBattler_Common.Shared;
 using IdleBattler_Server.Arena.Stores;
 using IdleBattler_Server.Fighter.Stores;
+using IdleBattler_Server.Hubs;
+using Microsoft.AspNetCore.SignalR;
 using Quartz;
 
 namespace IdleBattler_Server.Jobs
@@ -12,11 +14,13 @@ namespace IdleBattler_Server.Jobs
     {
         private readonly IArenaStore _arenaStore;
         private readonly IFighterStore _fighterStore;
+        private readonly IHubContext<ArenaHub> _hubContext;
 
-        public AddFightersJob(IArenaStore arenaStore, IFighterStore fighterStore)
+        public AddFightersJob(IArenaStore arenaStore, IFighterStore fighterStore, IHubContext<ArenaHub> hubContext)
         {
             _arenaStore = arenaStore;
             _fighterStore = fighterStore;
+            _hubContext = hubContext;
         }
 
         public async Task Execute(IJobExecutionContext context)
@@ -24,10 +28,16 @@ namespace IdleBattler_Server.Jobs
             foreach (var arena in await _arenaStore.GetOpenArenas())
             {
                 var fighter = await _fighterStore.CreateNewFighter();
-                var arenaFighter = new ArenaFighterModel(fighter);
-                var fighterRand = new Random(arena.Id.ToString().GetHashCode() + fighter.Id.ToString().GetHashCode());
-                arenaFighter.SetLocation(new ArenaItemLocation(fighterRand.Next(6, 95), fighterRand.Next(6, 95), VerticalMovementDirection.GetRandomDirection(), HorizontalMovementDirection.GetRandomDirection()));
-                arena.Fighters.Add(arenaFighter);
+                arena.AddFighter(fighter);
+
+                await _hubContext.Clients.All.SendAsync(ArenaHubConstants.ArenaUpdate, arena.Id.ToString());
+
+                if (arena.Fighters.Count == 4)
+                {
+                    await _arenaStore.SetArenaStarted(arena.Id);
+                    arena.SetStartTime(DateTime.Now);
+                    await _hubContext.Clients.All.SendAsync(ArenaHubConstants.ArenaStartBattle, arena.Id.ToString());
+                }
             }
         }
     }

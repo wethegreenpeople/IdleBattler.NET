@@ -3,12 +3,37 @@
 @using System.Text.Json
 @using IdleBattler_Common.Models.Arena
 @using IdleBattler_Common.Shared
+@using Microsoft.AspNetCore.SignalR.Client
+
+@inject NavigationManager Navigation
+
+
 @implements IDisposable
 
 <h3>Arena</h3>
 
 <progress id="arenaTimeRemaining" value="@_arenaTimeRemaining" max="100"></progress>
+@if (_arena != null && _arena.Fighters.Count > 0)
+{
+    <ul>
+        @foreach (var fighter in _arena.Fighters)
+        {
+            <li>@fighter.Fighter.Id</li>
+        }
+    </ul>
+}
 <BECanvas Width="500" Height="400" @ref="_canvasReference"></BECanvas>
+<div style="border:1px solid black;">
+    @if (_messages.Count > 0)
+    {
+        <ul>
+            @foreach (var message in _messages)
+            {
+                <li>@message</li>
+            }
+        </ul>
+    }
+</div>
 
 <style>
     canvas {
@@ -18,60 +43,63 @@
 
 @code {
     private Canvas2DContext _context;
-    private Guid _arenaId;
     private double _arenaTimeRemaining = 100.0;
     private CancellationToken _token;
+    private HubConnection _hubConnection;
+    private ArenaModel _arena;
+    private bool _hasStartedDrawing = false;
 
     private readonly CancellationTokenSource _tokenSource = new CancellationTokenSource();
     private readonly PeriodicTimer _timer = new(TimeSpan.FromMilliseconds(30));
     private readonly List<TreasureModel> _treasures = new List<TreasureModel>();
     private readonly List<ArenaEvent> _events = new List<ArenaEvent>();
     private readonly List<ArenaFighterModel> _fighters = new List<ArenaFighterModel>();
+    private readonly List<string> _messages = new List<String>();
 
     protected BECanvasComponent _canvasReference;
+
+    [Parameter]
+    public Guid ArenaId { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
         _token = _tokenSource.Token;
-        _arenaId = await GetNewArena();
-        _events.AddRange(await GetArenaEvents(_arenaId));
+        await SetArenaFromId(ArenaId.ToString());
 
-        try
+        _hubConnection = new HubConnectionBuilder()
+            .WithUrl("https://localhost:7156/arenahub")
+            .Build();
+
+        _hubConnection.On<string>("ArenaUpdate", async (arena) =>
         {
-            await RunOnTimer(this._timer, this._token, async () =>
+            if (ArenaId == Guid.Parse(arena)) 
             {
-                var eventsToDraw = await GetEventsToDraw(_events, _fighters);
+                await SetArenaFromId(arena);
+            }
+        });
 
-                try
-                {
-                    if (_events.Count <= 0) 
-                    {
-                        _tokenSource.Cancel();
-                    }
-                    else if (_events.ElementAt(_events.Count - 1).EventAction == EventAction.EventsNeedToContinue && _events.Count < 500)
-                    {
-                        var drawTask = Draw(this._context, this._canvasReference, eventsToDraw);
-                        var getArenaEventsTask = GetArenaEvents(_arenaId);
-
-                        await Task.WhenAll(drawTask, getArenaEventsTask);
-
-                        _events.AddRange(await getArenaEventsTask);
-                    }
-                    else await Draw(this._context, this._canvasReference, eventsToDraw);
-
-
-                    _events.RemoveRange(0, (eventsToDraw).Count);
-                }
-                catch (Exception ex)
-                {
-                    _tokenSource.Cancel();
-                }
-            });
-        }
-        catch (Exception ex)
+        _hubConnection.On<string>("ArenaStartBattle", async (arena) =>
         {
-            var doot = "";
-        }
+            if (ArenaId == Guid.Parse(arena))
+            {
+                await GetArenaEvents(_arena.Id);
+            }
+        });
+
+        _hubConnection.On<string, string>("EventsUpdate", async (arena, events) =>
+        {
+            if (ArenaId == Guid.Parse(arena))
+            {
+                _events.AddRange(JsonSerializer.Deserialize<List<ArenaEvent>>(events));
+                if (!_hasStartedDrawing)
+                {
+                    _hasStartedDrawing = true;
+                    StartArenaDrawTimer();
+                }
+            }
+        });
+
+        await _hubConnection.StartAsync();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -84,6 +112,7 @@
         this._canvasReference = null;
         this._timer.Dispose();
         this._tokenSource.Dispose();
+        this._hubConnection.DisposeAsync();
     }
 
     private async Task<List<ArenaEvent>> GetEventsToDraw(List<ArenaEvent> arenaEvents, List<ArenaFighterModel> activeFighters)
@@ -170,8 +199,16 @@
 
         foreach (var arenaEvent in arenaEvents)
         {
-            if (arenaEvent.EventAction == EventAction.SpawnTreasure) _treasures.Add(JsonSerializer.Deserialize<TreasureModel>(arenaEvent.EventObject.ToString()));
-            if (arenaEvent.EventAction == EventAction.Loot) _treasures.Remove(_treasures.FirstOrDefault(s => s.Id == arenaEvent.ObjectId));
+            if (arenaEvent.EventAction == EventAction.SpawnTreasure) 
+            {
+                _treasures.Add(JsonSerializer.Deserialize<TreasureModel>(arenaEvent.EventObject.ToString()));
+            }
+            if (arenaEvent.EventAction == EventAction.Loot)
+            {
+                var treasure = JsonSerializer.Deserialize<TreasureModel>(arenaEvent.EventObject.ToString());
+                _treasures.Remove(_treasures.FirstOrDefault(s => s.Id == treasure.Id));
+                AddArenaMessage($"{arenaEvent.ObjectId} found a {treasure?.Name}");
+            }
 
             if (arenaEvent.EventAction == EventAction.SpawnFighter) _fighters.Add(JsonSerializer.Deserialize<ArenaFighterModel>(arenaEvent.EventObject.ToString()));
             if (arenaEvent.EventAction == EventAction.Movement || arenaEvent.EventAction == EventAction.Fight)
@@ -180,7 +217,10 @@
                 var deserializedFighter = JsonSerializer.Deserialize<ArenaFighterModel>(arenaEvent.EventObject.ToString());
                 _fighters.Add(deserializedFighter);
             }
-            if (arenaEvent.EventAction == EventAction.Death) _fighters.Remove(_fighters.FirstOrDefault(s => s.Fighter.Id == arenaEvent.ObjectId));
+            if (arenaEvent.EventAction == EventAction.Death)
+            {
+                _fighters.Remove(_fighters.FirstOrDefault(s => s.Fighter.Id == arenaEvent.ObjectId));
+            }
             if (arenaEvent.EventAction == EventAction.ArenaTimeUpdate) UpdateArenaTime(JsonSerializer.Deserialize<double>(arenaEvent.EventObject.ToString()));
         }
 
@@ -210,6 +250,21 @@
         return Guid.NewGuid();
     }
 
+    private async Task<ArenaModel> GetArena(Guid arenaId)
+    {
+        var client = new HttpClient();
+
+        var response = await client.GetStreamAsync($"https://localhost:7156/api/Arena/{arenaId.ToString()}");
+        try
+        {
+            return JsonSerializer.Deserialize<ArenaModel>(response);
+        }
+        catch (Exception ex)
+        {
+            return null;
+        }
+    }
+
     private async Task<List<ArenaEvent>> GetArenaEvents(Guid arenaId)
     {
         var client = new HttpClient();
@@ -228,5 +283,53 @@
     {
         _arenaTimeRemaining = 100 - arenaTime;
         StateHasChanged();
+    }
+
+    private async Task SetArenaFromId(string arenaId)
+    {
+        _arena = await GetArena(Guid.Parse(arenaId));
+        StateHasChanged();
+    }
+
+    private void AddArenaMessage(string message)
+    {
+        _messages.Add(message);
+        StateHasChanged();
+    }
+
+    private async Task StartArenaDrawTimer()
+    {
+        try
+        {
+            await RunOnTimer(this._timer, this._token, async () =>
+            {
+                var eventsToDraw = await GetEventsToDraw(_events, _fighters);
+
+                try
+                {
+                    if (_arena.HasEnded)
+                    {
+                        _tokenSource.Cancel();
+                    }
+                    else if (_events.Count > 0 && _events.ElementAt(_events.Count - 1).EventAction == EventAction.EventsNeedToContinue && _events.Count < 500)
+                    {
+                        await GetArenaEvents(_arena.Id);
+                        await Draw(this._context, this._canvasReference, eventsToDraw);
+                    }
+                    else await Draw(this._context, this._canvasReference, eventsToDraw);
+
+
+                    _events.RemoveRange(0, (eventsToDraw).Count);
+                }
+                catch (Exception ex)
+                {
+                    _tokenSource.Cancel();
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            var doot = "";
+        }
     }
 }

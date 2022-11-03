@@ -11,7 +11,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IdleBattler Server", "..\Id
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IdleBattler Tests", "..\IdleBattler Tests\IdleBattler Tests.csproj", "{A499977B-6056-4B5B-8C4A-B0DBB2C3C32C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IdleBattler Common", "IdleBattler Common\IdleBattler Common.csproj", "{E8928C96-F31A-4FBC-B6D4-4131D8F5BD70}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IdleBattler Common", "IdleBattler Common\IdleBattler Common.csproj", "{E8928C96-F31A-4FBC-B6D4-4131D8F5BD70}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

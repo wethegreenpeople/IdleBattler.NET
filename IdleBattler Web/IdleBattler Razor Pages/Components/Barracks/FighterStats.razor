@@ -1,0 +1,41 @@
+﻿@using IdleBattler_Common.Models.Fighter
+@using IdleBattler_Common.Models.Equipment
+
+<h3>FighterStats</h3>
+
+<div style="border:1px solid black;">
+    @if (SelectedFighter != null)
+    {
+        <ul>
+            <li>Name: @SelectedFighter.Id</li>
+            <li>Health: @SelectedFighter.Health</li>
+            <li>Damage: @SelectedFighter.Damage</li>
+            <li>Movement Speed: @SelectedFighter.MovementSpeed</li>
+            <li>Vision Distance: @SelectedFighter.VisionDistance</li>
+        </ul>
+
+        <h4>Equipped Items</h4>
+        @if (SelectedFighter.Equipment.Count > 0)
+        {
+            <ul class="list-group list-group-horizontal">
+                @foreach (var equip in SelectedFighter.Equipment)
+                {
+                    <li class="list-group-item" @onclick="() => OnEquipmentDeselected(equip)">@equip.Name</li>
+                }
+            </ul>
+        }
+    }
+</div>
+
+
+
+
+
+@code {
+
+    [Parameter]
+    public FighterModel SelectedFighter { get; set; }
+
+    [Parameter]
+    public Action<EquipmentModel> OnEquipmentDeselected { get; set; }
+}
