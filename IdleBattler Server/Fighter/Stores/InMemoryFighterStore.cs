@@ -1,4 +1,5 @@
 ﻿using IdleBattler_Common.Models.Fighter;
+using RandomNameGeneratorLibrary;
 
 namespace IdleBattler_Server.Fighter.Stores
 {
@@ -8,7 +9,8 @@ namespace IdleBattler_Server.Fighter.Stores
 
         public Task<FighterModel> CreateNewFighter()
         {
-            var fighter = new FighterModel(Guid.NewGuid());
+            var personGenerator = new PersonNameGenerator();
+            var fighter = new FighterModel(Guid.NewGuid(), personGenerator.GenerateRandomFirstAndLastName());
             fighter.SetInitialStats();
             _fighters.Add(fighter);
             return Task.FromResult(fighter);
