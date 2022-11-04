@@ -1,0 +1,42 @@
+﻿@using IdleBattler_Razor_Pages.Components.Shop
+@using IdleBattler_Common.Models.Equipment
+
+@page "/shop"
+
+<h3>ShopPage</h3>
+
+<div class="row">
+    <div class="col">
+        <ItemsForSale EquipmentForSale="_equipmentForSale" OnEquipmentBuy="OnEquipmentBuy" />
+    </div>
+    <div class="col">
+        <ItemsAvailableToSell EquipmentAvailableToSell="_equipmentAvailableToSell" OnEquipmentSell="OnEquipmentSell" />
+    </div>
+</div>
+
+@code {
+    private List<EquipmentModel> _equipmentForSale = new List<EquipmentModel>();
+    private List<EquipmentModel> _equipmentAvailableToSell = new List<EquipmentModel>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (_equipmentForSale.Count == 0)
+        {
+            _equipmentForSale.Add(new EquipmentModel(1, "Gun", 0, 2, -1, 0));
+        }
+    }
+
+    private void OnEquipmentBuy(EquipmentModel equipment)
+    {
+        _equipmentForSale.Remove(equipment);
+        _equipmentAvailableToSell.Add(equipment);
+        StateHasChanged();
+    }
+
+    private void OnEquipmentSell(EquipmentModel equipment, int sellPrice)
+    {
+        _equipmentAvailableToSell.Remove(equipment);
+        _equipmentForSale.Add(equipment);
+        StateHasChanged();
+    }
+}

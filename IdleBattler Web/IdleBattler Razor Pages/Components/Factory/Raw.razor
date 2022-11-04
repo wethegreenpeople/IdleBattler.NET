@@ -1,0 +1,109 @@
+﻿@using IdleBattler_Common.Models.Factory
+@using IdleBattler_Common.Enums.Factory
+
+
+<h4>Gold</h4>
+<ul class="list-group list-group">
+    @foreach (var factory in _availableGoldFactories)
+    {
+        <li class="list-group-item">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row d-flex">
+                        <div class="col">@factory.Name</div>
+                        <div class="col">
+                            <div class="float-end">
+                                <div class="col">
+                                    <span>1</span>
+                                </div>
+                                <div class="col">
+                                    <button class="btn btn-primary" @onclick="(() => OnFactoryBuilt(factory))">Build</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        Gold Cost: 0 Silver Cost: 0 Copper Cost: 0
+                    </div>
+                </div>
+            </div>
+        </li>
+
+    }
+</ul>
+
+<h4>Silver</h4>
+@foreach (var factory in _availableSilverFactories)
+{
+    <li class="list-group-item">
+        <div class="card">
+            <div class="card-body">
+                <div class="row d-flex">
+                    <div class="col">@factory.Name</div>
+                    <div class="col">
+                        <div class="float-end">
+                            <div class="col">
+                                <span>1</span>
+                            </div>
+                            <div class="col">
+                                <button class="btn btn-primary" @onclick="(() => OnFactoryBuilt(factory))">Build</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    Gold Cost: 0 Silver Cost: 0 Copper Cost: 0
+                </div>
+            </div>
+        </div>
+    </li>
+
+}
+
+<h4>Copper</h4>
+@foreach (var factory in _availableCopperFactories)
+{
+    <li class="list-group-item">
+        <div class="card">
+            <div class="card-body">
+                <div class="row d-flex">
+                    <div class="col">@factory.Name</div>
+                    <div class="col">
+                        <div class="float-end">
+                            <div class="col">
+                                <span>1</span>
+                            </div>
+                            <div class="col">
+                                <button class="btn btn-primary" @onclick="(() => OnFactoryBuilt(factory))">Build</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    Gold Cost: 0 Silver Cost: 0 Copper Cost: 0
+                </div>
+            </div>
+        </div>
+    </li>
+
+}
+
+
+@code {
+    private List<FactoryModel> _availableGoldFactories;
+    private List<FactoryModel> _availableSilverFactories;
+    private List<FactoryModel> _availableCopperFactories;
+
+    [Parameter]
+    public List<FactoryModel> AvailableFactories { get; set; }
+
+    [Parameter]
+    public Action<FactoryModel> OnFactoryBuilt { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        _availableGoldFactories = AvailableFactories.Where(s => s.OutputType == FactoryOutputType.Gold).ToList();
+        _availableSilverFactories = AvailableFactories.Where(s => s.OutputType == FactoryOutputType.Silver).ToList();
+        _availableCopperFactories = AvailableFactories.Where(s => s.OutputType == FactoryOutputType.Copper).ToList();
+    }
+}

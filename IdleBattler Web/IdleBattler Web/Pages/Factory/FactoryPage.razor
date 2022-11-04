@@ -1,0 +1,81 @@
+﻿@using IdleBattler_Common.Enums.Factory
+@using IdleBattler_Razor_Pages.Components.Factory
+@using IdleBattler_Common.Models.Factory
+
+@page "/factory"
+
+<h3>FactoryPage</h3>
+
+<div class="row">
+    <div class="col">
+        <div class="row">
+            Gold 0: Silver: 0 Copper: 0
+        </div>
+        <ul class="nav nav-tabs">
+            <li class="nav-item">
+                <span class="@($"nav-link {(_isRawActive ? "active" : "")}")" aria-current="page" @onclick="(OnRawTabClick)">Raw</span>
+            </li>
+            <li class="nav-item">
+                <span class="@($"nav-link {(_isBluePrintsActive ? "active" : "")}")" aria-current="page" @onclick="(OnBluePrintTabClick)">Blueprints</span>
+            </li>
+        </ul>
+
+        @if (_isRawActive)
+        {
+            <Raw AvailableFactories="_availableFactories" OnFactoryBuilt="(OnFactoryBuilt)" />
+        }
+
+        @if (_isBluePrintsActive)
+        {
+            <BluePrints AvailableBluePrints="_availableBluePrints" OnBluePrintBuilt="(OnBluePrintBult)" />
+        }
+    </div>
+</div>
+
+
+
+@code {
+    private bool _isRawActive = true;
+    private bool _isBluePrintsActive = false;
+    private List<FactoryModel> _availableFactories = new List<FactoryModel>();
+    private List<BluePrintModel> _availableBluePrints = new List<BluePrintModel>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (_availableFactories.Count == 0)
+        {
+            _availableFactories.Add(new FactoryModel(1, "Coal Factory", 1, FactoryOutputType.Gold, 0, 10, 10));
+            _availableFactories.Add(new FactoryModel(2, "Coal Factory", 1, FactoryOutputType.Silver, 10, 0, 10));
+            _availableFactories.Add(new FactoryModel(3, "Coal Factory", 1, FactoryOutputType.Copper, 10, 10, 0));
+        }
+
+        if (_availableBluePrints.Count == 0)
+        {
+            _availableBluePrints.Add(new BluePrintModel(1, "Gun", 100, 500, 50));
+        }
+    }
+
+    private void OnRawTabClick()
+    {
+        _isRawActive = true;
+        _isBluePrintsActive = false;
+        StateHasChanged();
+    }
+
+    private void OnBluePrintTabClick()
+    {
+        _isRawActive = false;
+        _isBluePrintsActive = true;
+        StateHasChanged();
+    }
+
+    private void OnFactoryBuilt(FactoryModel factory)
+    {
+
+    }
+
+    private void OnBluePrintBult(BluePrintModel blueprint)
+    {
+
+    }
+}

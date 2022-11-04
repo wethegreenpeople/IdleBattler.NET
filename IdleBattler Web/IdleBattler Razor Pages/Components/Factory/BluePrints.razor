@@ -1,0 +1,42 @@
+﻿@using IdleBattler_Common.Models.Factory
+
+<h4>Weapons</h4>
+
+@foreach (var blueprint in _equipmentBluePrints)
+{
+    <li class="list-group-item">
+        <div class="card">
+            <div class="card-body">
+                <div class="row d-flex">
+                    <div class="col">@blueprint.Name</div>
+                    <div class="col">
+                        <div class="float-end">
+                            <div class="col">
+                                <button class="btn btn-primary" @onclick="(() => OnBluePrintBuilt(blueprint))">Build</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    Gold Cost: 0 Silver Cost: 0 Copper Cost: 0
+                </div>
+            </div>
+        </div>
+    </li>
+
+}
+
+@code {
+    private List<BluePrintModel> _equipmentBluePrints;
+
+    [Parameter]
+    public List<BluePrintModel> AvailableBluePrints { get; set; }
+
+    [Parameter]
+    public Action<BluePrintModel> OnBluePrintBuilt { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        _equipmentBluePrints = AvailableBluePrints;
+    }
+}
