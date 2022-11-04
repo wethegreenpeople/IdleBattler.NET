@@ -7,21 +7,24 @@ namespace IdleBattler_Common.Models.Fighter
     public class FighterModel
     {
         public Guid Id { get; private set; }
+        public string Name { get; private set; }
         public int MovementSpeed { get; private set; }
         public double Health { get; private set; }
         public double VisionDistance { get; private set; }
         public double Damage { get; private set; }
         public List<EquipmentModel> Equipment { get; private set; } = new List<EquipmentModel>();
 
-        public FighterModel(Guid id)
+        public FighterModel(Guid id, string name)
         {
             Id = id;
+            Name = name;
         }
 
         [JsonConstructor]
-        public FighterModel(Guid id, int movementSpeed, double health, double visionDistance, List<EquipmentModel> equipment, double damage)
+        public FighterModel(Guid id, string name, int movementSpeed, double health, double visionDistance, List<EquipmentModel> equipment, double damage)
         {
             Id = id;
+            Name = name;
             MovementSpeed = movementSpeed;
             Health = health;
             VisionDistance = visionDistance;
@@ -82,7 +85,7 @@ namespace IdleBattler_Common.Models.Fighter
 
         public static FighterModel Copy(FighterModel fighter)
         {
-            var fighterCopy = new FighterModel(fighter.Id);
+            var fighterCopy = new FighterModel(fighter.Id, fighter.Name);
             fighterCopy.SetHealth(fighter.Health);
             fighterCopy.SetMovementSpeed(fighter.MovementSpeed);
             fighterCopy.SetVisionDistance(fighter.VisionDistance);

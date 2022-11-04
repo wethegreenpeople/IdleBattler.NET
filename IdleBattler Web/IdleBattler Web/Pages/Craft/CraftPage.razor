@@ -1,0 +1,122 @@
+﻿@using IdleBattler_Common.Models.Component
+
+@page "/craft"
+
+<h3>CraftPage</h3>
+
+<div class="container">
+    <div class="row">
+        <div class="col">
+            <div class="row">
+                <div style=@($"height: 100px; width: 100px; {(_selectedCraftBox == 1 ? "border:3px solid green;" : "border:1px solid black;")}") @onclick="(() => OnCraftBoxSelect(1))">
+                    <div class="mr mh-100 hw-100">@($"{(_firstWeaponComponent == null ? 1 : _firstWeaponComponent.Name)}")</div>
+                </div>
+                <div style=@($"height: 100px; width: 100px; {(_selectedCraftBox == 2 ? "border:3px solid green;" : "border:1px solid black;")}") @onclick="(() => OnCraftBoxSelect(2))">
+                    <div class="mr mh-100 hw-100">@($"{(_secondWeaponComponent == null ? 2 : _secondWeaponComponent.Name)}")</div>
+                </div>
+            </div>
+            <div class="row">
+                <div style=@($"height: 100px; width: 100px; {(_selectedCraftBox == 3 ? "border:3px solid green;" : "border:1px solid black;")}") @onclick="(() => OnCraftBoxSelect(3))">
+                    <div class="mr mh-100 hw-100">@($"{(_thirdWeaponComponent == null ? 3 : _thirdWeaponComponent.Name)}")</div>
+                </div>
+                <div style=@($"height: 100px; width: 100px; {(_selectedCraftBox == 4 ? "border:3px solid green;" : "border:1px solid black;")}") @onclick="(() => OnCraftBoxSelect(4))">
+                    <div class="mr mh-100 hw-100">@($"{(_fourthWeaponComponent == null ? 4 : _fourthWeaponComponent.Name)}")</div>
+                </div>
+            </div>
+            
+        </div>
+        <div class="col">
+            <div style="border:1px solid black;">
+                @if (_availableWeaponComponents.Count > 0)
+                {
+                    <ul class="list-group list-group">
+                        @foreach (var weaponComponent in _availableWeaponComponents)
+                        {
+                            <li class="list-group-item" @onclick="(() => OnComponentSelect(_selectedCraftBox, weaponComponent))">@weaponComponent.Name</li>
+                        }
+                    </ul>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="row">
+
+    </div>
+</div>
+
+@code {
+    private List<WeaponComponentModel> _availableWeaponComponents = new List<WeaponComponentModel>();
+    private int _selectedCraftBox = 0;
+    private WeaponComponentModel _firstWeaponComponent;
+    private WeaponComponentModel _secondWeaponComponent;
+    private WeaponComponentModel _thirdWeaponComponent;
+    private WeaponComponentModel _fourthWeaponComponent;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _availableWeaponComponents.Add(new WeaponComponentModel("Copper Ammo", 0, 5, 0));
+        _availableWeaponComponents.Add(new WeaponComponentModel("Silver handle", 1, 1, 0));
+        _availableWeaponComponents.Add(new WeaponComponentModel("Gold barrel", 0, 2, 3));
+        _availableWeaponComponents.Add(new WeaponComponentModel("Gold Ammo", 0, 8, 0));
+    }
+
+    private void OnCraftBoxSelect(int selectedBox)
+    {
+        _selectedCraftBox = selectedBox;
+
+        switch (_selectedCraftBox)
+        {
+            case 4:
+                if (_fourthWeaponComponent != null) {
+                    _availableWeaponComponents.Add(_fourthWeaponComponent);
+                    _fourthWeaponComponent = null;
+                }
+                break;
+            case 3:
+                if (_thirdWeaponComponent != null) {
+                    _availableWeaponComponents.Add(_thirdWeaponComponent);
+                    _thirdWeaponComponent = null;
+                }
+                break;
+            case 2:
+                if (_secondWeaponComponent != null)
+                {
+                    _availableWeaponComponents.Add(_secondWeaponComponent);
+                    _secondWeaponComponent = null;
+                }
+                break;
+            case 1:
+                if (_firstWeaponComponent != null)
+                {
+                    _availableWeaponComponents.Add(_firstWeaponComponent);
+                    _firstWeaponComponent = null;
+                }
+                break;
+        }
+
+        StateHasChanged();
+    }
+
+    private void OnComponentSelect(int selectedCraftBox, WeaponComponentModel component)
+    {
+        switch (selectedCraftBox)
+        {
+            case 4:
+                _fourthWeaponComponent = component;
+                break;
+            case 3:
+                _thirdWeaponComponent = component;
+                break;
+            case 2:
+                _secondWeaponComponent = component;
+                break;
+            case 1:
+                _firstWeaponComponent = component;
+                break;
+        }
+
+        if (selectedCraftBox != 0) _availableWeaponComponents.Remove(component);
+
+        StateHasChanged();
+    }
+}
